@@ -34,6 +34,7 @@ def generator(m1):
 
 def entropyammoniawater(targetcomp):
 	# done at 4 bar
+	# interpolate specific entropy values in kJ/kg
 
 	entropy = np.array([1.52,
 	1.22,
@@ -49,8 +50,12 @@ def entropyammoniawater(targetcomp):
 
 	lowerentropy = entropy[int(math.floor(targetcomp *10))]
 	higherentropy = entropy[int((math.floor(targetcomp * 10)))+1]
-	return lowerentropy, higherentropy
-print(entropyammoniawater(0.78))
+
+	theta = (targetcomp - int(math.floor(targetcomp *10))/10.0 ) / ((int((math.floor(targetcomp * 10)))+1)/10.0 - int(math.floor(targetcomp *10))/10.0 )
+	return (theta * higherentropy) + (1-theta)*lowerentropy
+
+
+#print(entropyammoniawater(0.43))
 
 #print(absorberevaporator(10, 0.45, 0.8, 0.7))
 
