@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sympy import solve, Eq, symbols
 import sys 
+import pandas
 import math
 # This function calculates the degradation of the COP based on each entropy generation term (S)
 def degradeCOP(Tevap, Tcond, Qall, S):
@@ -32,31 +33,52 @@ def generator(m1):
 	m6 = m1
 	return m6
 
-def entropyammoniawater(targetcomp):
+def interpolate(filename, targetcomp):
 	# done at 4 bar
-	# interpolate specific entropy values in kJ/kg
+	# must use the entropy-ammonia csv
+	# WORKING!
+	colnames = ['pressure', 'ammoniacomp', 'entropy']
+	data = pandas.read_csv('%s.csv' %filename, names=colnames)
 
-	entropy = np.array([1.52,
-	1.22,
-	0.91,
-	0.59,
-	0.28,
-	0.02,
-	-0.17,
-	-0.28,
-	-0.29,
-	-0.3,
-	-0.31])
+	ammoniacomp = data.ammoniacomp.tolist()
+	entropy = data.entropy.tolist()
 
-	lowerentropy = entropy[int(math.floor(targetcomp *10))]
-	higherentropy = entropy[int((math.floor(targetcomp * 10)))+1]
+	#print(ammoniacomp)
+	#print(entropy)
 
-	theta = (targetcomp - int(math.floor(targetcomp *10))/10.0 ) / ((int((math.floor(targetcomp * 10)))+1)/10.0 - int(math.floor(targetcomp *10))/10.0 )
+	#print(int(math.floor(targetcomp /0.05))*0.05 )
+	#print((int((math.floor(targetcomp /0.05))+1))*0.05)
+	lowerentropy = entropy[int(math.floor(targetcomp /0.05))]
+	higherentropy = entropy[(int((math.floor(targetcomp /0.05))+1))]
+
+	theta = (targetcomp - int(math.floor(targetcomp /0.05))*0.05 ) / ((int((math.floor(targetcomp /0.05))+1))*0.05 - int(math.floor(targetcomp /0.05))*0.05 )
 	return (theta * higherentropy) + (1-theta)*lowerentropy
 
+def leverrule(inputflow, temp, inputcomp):
+	#t-xy of ammonia-water
+	colnames = ['pressure', 'ammoniacomp', 'temperature', 'vaporwater', 'vaporammonia', 'liquidwater', 'liquidammonia']
+	filename = 'txy-ammonia'
+	data = pandas.read_csv('%s.csv' %filename, names = colnames)
 
-#print(entropyammoniawater(0.43))
+	ammoniacomp = data.ammoniacomp.tolist()
+	temperature = data.temperature.tolist()
+	vaporammonia = data.vaporammonia.tolist()
+	liquidammonia = data.liquidammonia.tolist()
 
-#print(absorberevaporator(10, 0.45, 0.8, 0.7))
 
+	index, valuetemp =  min(enumerate(temperature), key=lambda x: abs(x[1]-temp))
+
+	liquiddistance = inputcomp - liquidammonia[index]
+	vapordistance = vaporammonia[index] - inputcomp
+
+	vaporflow = symbols('vaporflow')
+	system = [
+	Eq((vapordistance * vaporflow) + (-1.0*liquiddistance*(float(inputflow) - vaporflow)), 0)
+	]
+	soln = solve(system, [vaporflow])
+	return soln, (inputflow - soln[vaporflow]) ,liquidammonia[index], vaporammonia[index]
+
+	# load T-xy diagram
+	# do leverrule to calculate the two "arms"
+print(leverrule(50, 345, 0.5))
 
