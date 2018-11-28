@@ -14,7 +14,7 @@ def reversibleCOP(Tevap, Tcond, Tgen):
 	revCOP = (((Tgen - Tcond)/(Tgen))/((Tcond-Tevap)/Tevap))
 	return revCOP
 
-def absorberevaporator(m6, xa4, ya3, xa6):
+def massabsorberevaporator(m6, xa4, ya3, xa6):
 	m4, m3, m5= symbols(['m4', 'm3', 'm5'])
 	system = [
 	Eq((xa4*m4)+ (ya3 * m3) - (ya3 * m5) - (xa6 * m6), 0),
@@ -24,35 +24,21 @@ def absorberevaporator(m6, xa4, ya3, xa6):
 	soln = solve(system, [m4, m3, m5, m6])
 	return soln
 
-	#a = np.array([[xa4, ya3, -ya3, -xa6], [1, 1, -1, -1], [1, -ya3, -1, ya3]])
-	#b = np.array([0, 0, 0])
-
-	#return np.linalg.solve(a, b)
-
-def generator(m1):
-	m6 = m1
-	return m6
-
 def interpolate(filename, targetcomp):
 	# done at 4 bar
-	# must use the entropy-ammonia csv
+	# must use the entropy-ammonia-water csv, entropy-ammonia-butane csv, or enthalpy-ammonia-water csv
 	# WORKING!
-	colnames = ['pressure', 'ammoniacomp', 'entropy']
+	colnames = ['pressure', 'ammoniacomp', 'prop']
 	data = pandas.read_csv('%s.csv' %filename, names=colnames)
 
 	ammoniacomp = data.ammoniacomp.tolist()
-	entropy = data.entropy.tolist()
+	prop = data.prop.tolist()
 
-	#print(ammoniacomp)
-	#print(entropy)
-
-	#print(int(math.floor(targetcomp /0.05))*0.05 )
-	#print((int((math.floor(targetcomp /0.05))+1))*0.05)
-	lowerentropy = entropy[int(math.floor(targetcomp /0.05))]
-	higherentropy = entropy[(int((math.floor(targetcomp /0.05))+1))]
+	lower = prop[int(math.floor(targetcomp /0.05))]
+	higher = prop[(int((math.floor(targetcomp /0.05))+1))]
 
 	theta = (targetcomp - int(math.floor(targetcomp /0.05))*0.05 ) / ((int((math.floor(targetcomp /0.05))+1))*0.05 - int(math.floor(targetcomp /0.05))*0.05 )
-	return (theta * higherentropy) + (1-theta)*lowerentropy
+	return (theta * higher) + (1-theta)*lower
 
 def leverrule(inputflow, temp, inputcomp):
 	#t-xy of ammonia-water
@@ -78,7 +64,30 @@ def leverrule(inputflow, temp, inputcomp):
 	soln = solve(system, [vaporflow])
 	return soln, (inputflow - soln[vaporflow]) ,liquidammonia[index], vaporammonia[index]
 
-	# load T-xy diagram
-	# do leverrule to calculate the two "arms"
-print(leverrule(50, 345, 0.5))
+def Qgenerator(massin, compin):
+	massout = massin
+
+	enthalpyin = interpolate('enthalpy-kjmol-266K-ammoniawater', compin)
+
+	enthalpyout = interpolate('enthalpy-kjmol-375K-ammoniawater', compin)
+
+	Qgen = -1*(enthalpyin - enthalpyout)
+
+	return Qgen
+
+def Sgenerator(massin, compin, Qgen):
+	massout = massin
+
+	entropyin = interpolate('entropy-kjmol-266K-ammoniawater', compin)
+
+	entropyout = interpolate('entropy-kjmol-375K-ammoniawater', compin)
+
+	Sgen = symbols('Sgen')
+	system = [
+	Eq((vapordistance * vaporflow) + (-1.0*liquiddistance*(float(inputflow) - vaporflow)), 0)
+	]
+	soln = solve(system, [vaporflow])
+
+
+
 
