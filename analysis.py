@@ -84,10 +84,11 @@ def Sgenerator(massin, compin, Qgen):
 
 	Sgen = symbols('Sgen')
 	system = [
-	Eq((vapordistance * vaporflow) + (-1.0*liquiddistance*(float(inputflow) - vaporflow)), 0)
+	#add the entropy equation here specified in the rahul's photo.
 	]
-	soln = solve(system, [vaporflow])
+	soln = solve(system, [Sgen])
 
+	return Sgen
 
 
 
