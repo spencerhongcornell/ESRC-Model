@@ -84,11 +84,16 @@ def Sgenerator(massin, compin, Qgen):
 
 	Sgen = symbols('Sgen')
 	system = [
-	#add the entropy equation here specified in the rahul's photo.
+	Eq((-1 * massin * entropyin ) + (massout*entropyout) + (Qgen/375) - Sgen, 0)
+
 	]
 	soln = solve(system, [Sgen])
 
-	return Sgen
+	return soln[Sgen]
 
+Qgen= Qgenerator(float(sys.argv[1]), float(sys.argv[2]))
+Sgen = Sgenerator(float(sys.argv[1]), float(sys.argv[2]), Qgen)
+
+print(Qgen, Sgen)
 
 
