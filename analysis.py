@@ -151,17 +151,17 @@ def Qabsorber(m3, m4, m5, m6, ya3, xa4, xa5, xa6):
 
 def Sabsorber(m3, m4, m5, m6, ya3, xa4, xa5, xa6, Qabs, T):
 
-	enthalpym3 = interpolate('entropy-kjmol-266K-ammoniabutane', ya3)
+	entropym3 = interpolate('entropy-kjmol-266K-ammoniabutane', ya3)
 
-	enthalpym4 = interpolate('entropy-kjmol-375K-ammoniawater', xa4)
+	entropym4 = interpolate('entropy-kjmol-375K-ammoniawater', xa4)
 
-	enthalpym5 = interpolate('entropy-kjmol-325K-ammoniabutane', xa5)
+	entropym5 = interpolate('entropy-kjmol-325K-ammoniabutane', xa5)
 
-	enthalpym6 = interpolate('entropy-kjmol-325K-ammoniawater', xa6)
+	entropym6 = interpolate('entropy-kjmol-325K-ammoniawater', xa6)
 
 	Sabs = symbols('Sabs')
 	system = [
-	Eq((m3*entropym3) + (m4 * entropym4) + (-1*m5 * entropym5) + (-1*m6*enthalpym6) + (Qevap/T)- Sevap, 0)
+	Eq((m3*entropym3) + (m4 * entropym4) + (-1*m5 * entropym5) + (-1*m6*entropym6) + (Qevap/T)- Sabs, 0)
 	]
 
 	soln = solve(system, [Sabs])
@@ -196,6 +196,8 @@ ya3 = 0.8
 xa6 = compammoniagen
 xa5 = 0
 
+
+
 #print(massabsorberevaporator(m6old, xa4, ya3, xa6))
 m4, m3, m5, m6new = massabsorberevaporator(m6old, xa4, ya3, xa6)
 
@@ -205,8 +207,12 @@ Sevap = Sevaporator(m2, m3, m5, ya3, ya2, xa5, 266, Qevap)
 Qabs = Qabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6)
 Sabs = Sabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6, Qabs, 325)
 
-print(m6)
-print(massoutgen)
+Qgen = Qgenerator(m6new, xa6)
+Sgen = Sgenerator(m6new, xa6, 375)
+
+print(Sevap)
+print(Sabs)
+print(Sgen)
 
 
 #print("m3: " + str(m3) + " " + "m4: " + str(m4) + " " + "m5: " + str(m5) + " m6: " + str(m6new))
