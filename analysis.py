@@ -22,7 +22,8 @@ def massabsorberevaporator(m6, xa4, ya3, xa6):
 	Eq(m4 - (ya3*m3) - (m5) + (ya3 * m6), 0)
 	]
 	soln = solve(system, [m4, m3, m5, m6])
-	return soln
+
+	return float(soln[m4]), float(soln[m3]), float(soln[m5]), float(m6)
 
 def interpolate(filename, targetcomp):
 	# done at 4 bar
@@ -42,6 +43,7 @@ def interpolate(filename, targetcomp):
 
 def leverrule(inputflow, temp, inputcomp):
 	#t-xy of ammonia-water
+	#input composition of ammonia
 	colnames = ['pressure', 'ammoniacomp', 'temperature', 'vaporwater', 'vaporammonia', 'liquidwater', 'liquidammonia']
 	filename = 'txy-ammonia'
 	data = pandas.read_csv('%s.csv' %filename, names = colnames)
@@ -62,7 +64,9 @@ def leverrule(inputflow, temp, inputcomp):
 	Eq((vapordistance * vaporflow) + (-1.0*liquiddistance*(float(inputflow) - vaporflow)), 0)
 	]
 	soln = solve(system, [vaporflow])
-	return soln, (inputflow - soln[vaporflow]) ,liquidammonia[index], vaporammonia[index]
+
+	# vapor flow, liquid flow, liquid ammonia composition. vapor ammonia composition
+	return soln[vaporflow], (inputflow - soln[vaporflow]) ,liquidammonia[index], vaporammonia[index]
 
 def Qgenerator(massin, compin):
 	massout = massin
@@ -90,10 +94,124 @@ def Sgenerator(massin, compin, Qgen):
 	soln = solve(system, [Sgen])
 
 	return soln[Sgen]
+ 
+def Qevaporator(m2, m3, m5, ya3, ya2, xa5):
 
-Qgen= Qgenerator(float(sys.argv[1]), float(sys.argv[2]))
-Sgen = Sgenerator(float(sys.argv[1]), float(sys.argv[2]), Qgen)
+	enthalpym2 = interpolate('enthalpy-kjmol-375K-ammoniawater', ya2)
 
-print(Qgen, Sgen)
+	enthalpym3 = interpolate('enthalpy-kjmol-266K-ammoniabutane', ya3)
+
+	enthalpym5 = interpolate('enthalpy-kjmol-325K-ammoniabutane', xa5)
+
+	Qevap = symbols('Qevap')
+	system = [
+	Eq(( m2 * enthalpym2 ) + (-1* m3*enthalpym3) + (m5*enthalpym5) + Qevap, 0)
+
+	]
+	soln = solve(system, [Qevap])
+
+	return soln[Qevap]
+
+def Sevaporator(m2, m3, m5, ya3, ya2, xa5, T, Qevap):
+
+	entropym2 = interpolate('entropy-kjmol-375K-ammoniawater', ya2)
+
+	entropym3 = interpolate('entropy-kjmol-266K-ammoniabutane', ya3)
+
+	entropym5 = interpolate('entropy-kjmol-325K-ammoniabutane', xa5)
+
+	Sevap = symbols('Sevap')
+	system = [
+	Eq(( m2 * entropym2 ) + (-1* m3*entropym3) + (m5*entropym5) + (Qevap/T) - Sevap, 0)
+	]
+
+	soln = solve(system, [Sevap])
+
+	return soln[Sevap]
+
+def Qabsorber(m3, m4, m5, m6, ya3, xa4, xa5, xa6):
+
+	enthalpym3 = interpolate('enthalpy-kjmol-266K-ammoniabutane', ya3)
+
+	enthalpym4 = interpolate('enthalpy-kjmol-375K-ammoniawater', xa4)
+
+	enthalpym5 = interpolate('enthalpy-kjmol-325K-ammoniabutane', xa5)
+
+	enthalpym6 = interpolate('enthalpy-kjmol-325K-ammoniawater', xa6)
+
+	Qabs = symbols('Qabs')
+	system = [
+	Eq((m3 * enthalpym3 ) + (m4 * enthalpym4) + (-1*m5 * enthalpym5) + (-1 * m6 * enthalpym6) + Qabs, 0)
+	]
+
+	soln = solve(system, [Qabs])
+
+	return soln[Qabs]
+
+
+def Sabsorber(m3, m4, m5, m6, ya3, xa4, xa5, xa6, Qabs, T):
+
+	enthalpym3 = interpolate('entropy-kjmol-266K-ammoniabutane', ya3)
+
+	enthalpym4 = interpolate('entropy-kjmol-375K-ammoniawater', xa4)
+
+	enthalpym5 = interpolate('entropy-kjmol-325K-ammoniabutane', xa5)
+
+	enthalpym6 = interpolate('entropy-kjmol-325K-ammoniawater', xa6)
+
+	Sabs = symbols('Sabs')
+	system = [
+	Eq((m3*entropym3) + (m4 * entropym4) + (-1*m5 * entropym5) + (-1*m6*enthalpym6) + (Qevap/T)- Sevap, 0)
+	]
+
+	soln = solve(system, [Sabs])
+
+	return soln[Sabs]
+
+
+
+
+massoutgen = float(sys.argv[1])
+massammoniaoutgen = massoutgen * float(sys.argv[2])
+masswateroutgen = massoutgen * (1-float(sys.argv[2]))
+compammoniagen = (massammoniaoutgen/massoutgen)
+
+#Qgen= Qgenerator(massoutgen, float(sys.argv[2]))
+#Sgen = Sgenerator(float(sys.argv[1]), float(sys.argv[2]), Qgen)
+
+massintoflash = massoutgen 
+massvaporoutflash, massliquidoutflash, liquidammoniacomp, vaporammoniacomp = leverrule(massintoflash, 375, compammoniagen)
+
+
+#print(massvaporoutflash)
+#print(vaporammoniacomp)
+m2 = massvaporoutflash
+ya2 = vaporammoniacomp
+
+m4 = massliquidoutflash
+
+m6old = massoutgen 
+xa4 =  liquidammoniacomp
+ya3 = 0.8
+xa6 = compammoniagen
+xa5 = 0
+
+#print(massabsorberevaporator(m6old, xa4, ya3, xa6))
+m4, m3, m5, m6new = massabsorberevaporator(m6old, xa4, ya3, xa6)
+
+Qevap = Qevaporator(m2, m3, m5, ya3, ya2, xa5)
+Sevap = Sevaporator(m2, m3, m5, ya3, ya2, xa5, 266, Qevap)
+
+Qabs = Qabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6)
+Sabs = Sabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6, Qabs, 325)
+
+print(m6)
+print(massoutgen)
+
+
+#print("m3: " + str(m3) + " " + "m4: " + str(m4) + " " + "m5: " + str(m5) + " m6: " + str(m6new))
+
+
+
 
 
