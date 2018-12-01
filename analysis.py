@@ -197,9 +197,9 @@ m4 = massliquidoutflash
 
 m6old = massoutgen 
 xa4 =  liquidammoniacomp
-ya3 = 0.75
+ya3 = 0.75    #AZEOTROPE
 xa6 = compammoniagen
-xa5 = 0
+xa5 = 0        #ASSUME TO BE PURE STREAM - RAHUL
 
 
 m4, m3, m5, m6new = massabsorberevaporator(m6old, xa4, ya3, xa6)
