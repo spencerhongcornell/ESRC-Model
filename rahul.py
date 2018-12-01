@@ -188,12 +188,6 @@ compammoniagen = 0  # this is the composition of ammonia out of the generator
 ################
 
 
-
-#massoutgen = float(sys.argv[1])
-#massammoniaoutgen = massoutgen * float(sys.argv[2])
-#masswateroutgen = massoutgen * (1-float(sys.argv[2]))
-#compammoniagen = (massammoniaoutgen/massoutgen)
-
 massintoflash = massoutgen 
 massvaporoutflash, massliquidoutflash, liquidammoniacomp, vaporammoniacomp = leverrule(massintoflash, 375, compammoniagen)
 
