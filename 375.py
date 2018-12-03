@@ -16,16 +16,18 @@ def reversibleCOP(Tevap, Tcond, Tgen):
 
 # This function solves the system of equations to calculate the mass flowrates of
 # the combined absorber-evaporator system
-def massabsorberevaporator(m6, xa4, ya3, xa6):
-	m4, m3, m5= symbols(['m4', 'm3', 'm5'])
+def massabsorberevaporator(m6, m4, xa4, ya3, xa6):
+	m3, m5= symbols(['m3', 'm5'])
 	system = [
-	Eq((xa4*m4)+ (ya3 * m3) - (ya3 * m5) - (xa6 * m6), 0),
+	#Eq((xa4*m4)+ (ya3 * m3) - (0 * m5) - (xa6 * m6), 0),
+    Eq(m5 - (1-ya3)*m3,0),
 	Eq(m4 + m3 - m5 - m6, 0),
-	Eq(m4 - (ya3*m3) - (m5) + (ya3 * m6), 0)
+    #Eq((1-ya3)*m3-m5, 0)
+	#Eq(m4 - (ya3*m3) - (m5) + (ya3 * m6), 0)
 	]
 	soln = solve(system, [m4, m3, m5, m6])
 
-	return float(soln[m4]), float(soln[m3]), float(soln[m5]), float(m6)
+	return float(m4), float(soln[m3]), float(soln[m5]), float(m6)
 
 # This is an interpolate helper function to be used in other functions.
 # targetcomp refers to ammonia composition. All CSV files are in ammonia composition.
@@ -84,7 +86,7 @@ def Qgenerator(massin, compin):
 
 	enthalpyout = interpolate('enthalpy-kjmol-375K-ammoniawater', compin)
 
-	Qgen = -1*(enthalpyin - enthalpyout)
+	Qgen = -1*(massin*enthalpyin - massout*enthalpyout)
 
 	return Qgen
 # This calculates the S of the generator
@@ -92,8 +94,8 @@ def Qgenerator(massin, compin):
 def Sgenerator(massin, compin, Qgen):
 	massout = massin
 
-	entropyin = interpolate('entropy-kjmol-266K-ammoniawater', compin)
-
+	entropyin = interpolate('entropy-kjmol-325K-ammoniawater', compin)
+    #RAHUL fixed Line 95 - wrong entropy values read in
 	entropyout = interpolate('entropy-kjmol-375K-ammoniawater', compin)
 
 	Sgen = symbols('Sgen')
@@ -108,11 +110,11 @@ def Sgenerator(massin, compin, Qgen):
 def Qevaporator(m2, m3, m5, ya3, ya2, xa5):
 
 	enthalpym2 = interpolate('enthalpy-kjmol-375K-ammoniawater', ya2)
-
+    #
 	enthalpym3 = interpolate('enthalpy-kjmol-266K-ammoniabutane', ya3)
-
+    #-94.38 kJ/mol
 	enthalpym5 = interpolate('enthalpy-kjmol-325K-ammoniabutane', xa5)
-
+    #-133kj/mol
 	Qevap = symbols('Qevap')
 	system = [
 	Eq(( m2 * enthalpym2 ) + (-1* m3*enthalpym3) + (m5*enthalpym5) + Qevap, 0)
@@ -142,13 +144,13 @@ def Sevaporator(m2, m3, m5, ya3, ya2, xa5, T, Qevap):
 def Qabsorber(m3, m4, m5, m6, ya3, xa4, xa5, xa6):
 
 	enthalpym3 = interpolate('enthalpy-kjmol-266K-ammoniabutane', ya3)
-
+    
 	enthalpym4 = interpolate('enthalpy-kjmol-375K-ammoniawater', xa4)
-
+    
 	enthalpym5 = interpolate('enthalpy-kjmol-325K-ammoniabutane', xa5)
-
+    
 	enthalpym6 = interpolate('enthalpy-kjmol-325K-ammoniawater', xa6)
-
+    
 	Qabs = symbols('Qabs')
 	system = [
 	Eq((m3 * enthalpym3 ) + (m4 * enthalpym4) + (-1*m5 * enthalpym5) + (-1 * m6 * enthalpym6) + Qabs, 0)
@@ -181,63 +183,85 @@ def Sabsorber(m3, m4, m5, m6, ya3, xa4, xa5, xa6, Qabs, T):
 ################
 #    RAHUL     #
 ################ 
-massoutgen = 0    # this is the mass flow rate of the stream coming out of the generator
-compammoniagen = 0  # this is the composition of ammonia out of the generator
+massoutgen = 10   # this is the mass flow rate of the stream coming out of the generator
+compammoniagen = 0.6  # this is the composition of ammonia out of the generator
 ################
 #    RAHUL     #
 ################
 
 
-massintoflash = massoutgen 
-massvaporoutflash, massliquidoutflash, liquidammoniacomp, vaporammoniacomp = leverrule(massintoflash, 375, compammoniagen)
+
+#massoutgen = float(sys.argv[1])
+#massammoniaoutgen = massoutgen * float(sys.argv[2])
+#masswateroutgen = massoutgen * (1-float(sys.argv[2]))
+#compammoniagen = (massammoniaoutgen/massoutgen)
+
+def run(ammoniacompin):
+
+	massintoflash = massoutgen 
+	massvaporoutflash, massliquidoutflash, liquidammoniacomp, vaporammoniacomp = leverrule(10, 375, ammoniacompin)
 
 
-m2 = massvaporoutflash
-ya2 = vaporammoniacomp
+	m2 = massvaporoutflash
+	ya2 = vaporammoniacomp
 
-m4 = massliquidoutflash
+	m4 = massliquidoutflash
 
-m6old = massoutgen 
-xa4 =  liquidammoniacomp
-ya3 = 0.75    #AZEOTROPE
-xa6 = compammoniagen
-xa5 = 0        #ASSUME TO BE PURE STREAM - RAHUL
-
-
-m4, m3, m5, m6new = massabsorberevaporator(m6old, xa4, ya3, xa6)
-print("m2: " +  str(m2) + "\nm3: " + str(m3) +  "\n" + "m4: " + str(m4)+ "\n" + "m5: " + str(m5) + "\n" + "m6: " + str(m6new))
-Qevap = Qevaporator(m2, m3, m5, ya3, ya2, xa5)
-Sevap = Sevaporator(m2, m3, m5, ya3, ya2, xa5, 266, Qevap)
-
-print("Qevap: " + str(Qevap) + "\nSevap: " + str(Sevap))
+	m6old = massoutgen 
+	xa4 =  liquidammoniacomp
+	ya3 = 0.75    #AZEOTROPE
+	xa6 = compammoniagen
+	xa5 = 0        #ASSUME TO BE PURE STREAM - RAHUL
 
 
-Qabs = Qabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6)
-Sabs = Sabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6, Qabs, 325)
-
-print("Qabs: " + str(Qabs) + "\nSabs: " + str(Sabs))
-
-Qgen = Qgenerator(m6new, xa6)
-Sgen = Sgenerator(m6new, xa6, 375)
-
-print("Qgen: " + str(Qgen) + "\nSgen: " + str(Sgen))
-
-print(Qevap/Qgen)
-#Sall = Sgen + Sevap + Sabs
-COPrev = reversibleCOP(266, 325, 375)
-
-#Sall = - Qevap/266 - Qabs/325 + Qgen/375
-
-# Sall = [Sgen, Sevap, Sabs]
-# COPdegrade = 0
-# for S in Sall:
-# 	COPdegrade += degradeCOP(266, 325, Qgen, S)
-
-# print(COPdegrade)
-#COPdegrade = degradeCOP(266, 325, 4000000, Sall)
+	m4, m3, m5, m6new = massabsorberevaporator(m6old, massliquidoutflash, xa4, ya3, xa6)
+	#print("m2: " +  str(m2) + "\nm3: " + str(m3) +  "\n" + "m4: " + str(m4)+ "\n" + "m5: " + str(m5) + "\n" + "m6: " + str(m6new))
+	Qevap = Qevaporator(m2, m3, m5, ya3, ya2, xa5)
+	Sevap = Sevaporator(m2, m3, m5, ya3, ya2, xa5, 266, Qevap)
 
 
+	#print("Qevap: " + str(Qevap) + "\nSevap: " + str(Sevap))
 
+
+	Qabs = Qabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6)
+	Sabs = Sabsorber(m3, m4, m5, m6new, ya3, xa4, xa5, xa6, Qabs, 325)
+
+	#print("Qabs: " + str(Qabs) + "\nSabs: " + str(Sabs))
+
+	Qgen = Qgenerator(m6new, xa6)
+	Sgen = Sgenerator(m6new, xa6, 375)
+
+	#print("Qgen: " + str(Qgen) + "\nSgen: " + str(Sgen))
+
+	#print(Qevap/Qgen)
+	#Sall = Sgen + Sevap + Sabs
+	COPrev = reversibleCOP(266, 325, 375)
+
+	#print(COPrev)
+	#Sall = - Qevap/266 - Qabs/325 + Qgen/375
+
+	# Sall = [Sgen, Sevap, Sabs]
+	# COPdegrade = 0
+	# for S in Sall:
+	# 	COPdegrade += degradeCOP(266, 325, Qgen, S)
+
+	# print(COPdegrade)
+	#COPdegrade = degradeCOP(266, 325, 4000000, Sall)
+	return Qevap, m4, m3, Qgen
+
+
+Qevapl = []
+m4l = []
+m3l = []
+Qgenl = []
+for i in np.arange(0, 1, 0.05):
+	Qevap, m4, m3, Qgen = run(i)
+	if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0:
+		Qevapl.append(Qevap)
+		m4l.append(m4)
+		m3l.append(m3)
+		Qgenl.append(Qgen)
+		print(i)
 
 
 
