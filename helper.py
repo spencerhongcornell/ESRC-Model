@@ -192,7 +192,7 @@ def Qevaporator(m2, m3, m5, ya3, ya2, xa5, Tgen):
 
    # print(enthalpym2 + enthalpym3 + enthalpym5)
     Qevap = symbols('Qevap')
-    system = ( m2 * enthalpym2 ) + (-1* m3*enthalpym3) + (m5*enthalpym5) + Qevap
+    system = Eq(( m2 * enthalpym2 ) + (-1* m3*enthalpym3) + (m5*enthalpym5) + Qevap, 0)
     soln = solve([system], Qevap)
 
     #print(type(soln))

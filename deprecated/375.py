@@ -4,6 +4,11 @@ from sympy import solve, Eq, symbols
 import sys 
 import pandas
 import math
+import os
+
+
+
+
 # This function calculates the degradation of the COP based on each entropy generation term (S)
 def degradeCOP(Tevap, Tcond, Qall, S):
     degraded = ((Tevap * Tcond)/(Tcond - Tevap)) * (S/Qall)
@@ -32,10 +37,14 @@ def massabsorberevaporator(m6, m4, xa4, ya3, xa6):
 # This is an interpolate helper function to be used in other functions.
 # targetcomp refers to ammonia composition. All CSV files are in ammonia composition.
 def interpolate(filename, targetcomp):
-    # done at 4 bar
     # must use the entropy-ammonia-water csv, entropy-ammonia-butane csv, or enthalpy-ammonia-water csv
+
+    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+    rel_path = 'data/mixed/'
+    abs_file_path = os.path.join(script_dir, rel_path)
+
     colnames = ['pressure', 'ammoniacomp', 'prop']
-    data = pandas.read_csv('%s.csv' %filename, names=colnames)
+    data = pandas.read_csv(str(abs_file_path) + '%s.csv' %filename, names=colnames)
 
     ammoniacomp = data.ammoniacomp.tolist()
     prop = data.prop.tolist()
@@ -53,9 +62,12 @@ def interpolate(filename, targetcomp):
 def leverrule(inputflow, temp, inputcomp):
     #t-xy of ammonia-water
     #input composition of ammonia
+    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+    rel_path = "data/txy/"
+    abs_file_path = os.path.join(script_dir, rel_path)
     colnames = ['pressure', 'ammoniacomp', 'temperature', 'vaporwater', 'vaporammonia', 'liquidwater', 'liquidammonia']
-    filename = 'txy-ammonia'
-    data = pandas.read_csv('%s.csv' %filename, names = colnames)
+    filename = 'txy-ammonia-4bar'
+    data = pandas.read_csv( str(abs_file_path) + '%s.csv' %filename, names = colnames)
 
     ammoniacomp = data.ammoniacomp.tolist()
     temperature = data.temperature.tolist()
@@ -89,8 +101,8 @@ def Qgenerator(massin, compin):
     Qgen = -1*(massin*enthalpyin - massout*enthalpyout)
 
     return Qgen
-# This calculates the S of the generator
-# compin is the ammonia generator
+# This calculates the S of the flash
+# compin is the ammonia flash
 def Sgenerator(massin, compin, Qgen):
     massout = massin
 
@@ -106,7 +118,41 @@ def Sgenerator(massin, compin, Qgen):
     soln = solve(system, [Sgen])
 
     return soln[Sgen]
- 
+
+def Qflash(massin, massvapor, massliquid, compin, vaporammonia, liquidammonia):
+
+    enthalpyin = interpolate('enthalpy-kjmol-375K-ammoniawater', compin)
+
+    enthalpyoutvapor = interpolate('enthalpy-kjmol-375K-ammoniawater', vaporammonia)
+
+    enthalpyoutliquid = interpolate('enthalpy-kjmol-375K-ammoniawater', liquidammonia)
+
+    Qflash = symbols('Qflash')
+    system = [
+    Eq(( massin* enthalpyin ) + (-1* massvapor*enthalpyoutvapor) + (-1* massliquid*enthalpyoutliquid) + Qflash, 0)
+
+    ]
+    soln = solve(system, [Qflash])
+
+    return soln[Qflash]
+# This calculates the S of the flash
+# compin is the ammonia flash
+def Sflash(massin, massvapor, massliquid, compin, vaporammonia, liquidammonia, Qflash, T):
+
+    entropyin = interpolate('entropy-kjmol-375K-ammoniawater', compin)
+
+    entropyoutvapor = interpolate('entropy-kjmol-375K-ammoniawater', vaporammonia)
+
+    entropyoutliquid = interpolate('entropy-kjmol-375K-ammoniawater', liquidammonia)
+
+    Sflash = symbols('Sflash')
+    system = [
+    Eq(( massin* entropyin ) + (-1* massvapor*entropyoutvapor) + (-1* massliquid*entropyoutliquid) + (Sflash/T) - Qflash, 0)
+
+    ]
+    soln = solve(system, [Sflash])
+
+    return soln[Sflash]
 def Qevaporator(m2, m3, m5, ya3, ya2, xa5):
 
     enthalpym2 = interpolate('enthalpy-kjmol-375K-ammoniawater', ya2)
@@ -201,7 +247,6 @@ def run(ammoniacompin):
     massintoflash = massoutgen 
     massvaporoutflash, massliquidoutflash, liquidammoniacomp, vaporammoniacomp = leverrule(10, 375, ammoniacompin)
 
-
     m2 = massvaporoutflash
     ya2 = vaporammoniacomp
 
@@ -218,6 +263,9 @@ def run(ammoniacompin):
     #print("m2: " +  str(m2) + "\nm3: " + str(m3) +  "\n" + "m4: " + str(m4)+ "\n" + "m5: " + str(m5) + "\n" + "m6: " + str(m6new))
     Qevap = Qevaporator(m2, m3, m5, ya3, ya2, xa5)
     Sevap = Sevaporator(m2, m3, m5, ya3, ya2, xa5, 266, Qevap)
+
+    Qflas = Qflash(massintoflash, m2, m4, ammoniacompin, ya2, xa4)
+    Sflas = Sflash(massintoflash, m2, m4, ammoniacompin, ya2, xa4, Qflas, 375)
 
 
     #print("Qevap: " + str(Qevap) + "\nSevap: " + str(Sevap))
@@ -247,7 +295,7 @@ def run(ammoniacompin):
 
     # print(COPdegrade)
     #COPdegrade = degradeCOP(266, 325, 4000000, Sall)
-    return Qevap, m4, m3, Qgen, COPreal
+    return Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs
 
 
 Qevapl = []
@@ -258,20 +306,17 @@ realCOP = []
 
 
 for i in np.arange(0, 1, 0.05):
-    Qevap, m4, m3, Qgen, COPreal = run(i)
+    Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs = run(i)
     if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0:
         Qevapl.append(Qevap)
         m4l.append(m4)
         m3l.append(m3)
         Qgenl.append(Qgen)
         realCOP.append(COPreal)
+        print(i)
+        print(Qflas + Qgen + Qevap + Qabs)
         #print(i)
-        print('----------')
-        print(COPreal)
-        print(Qabs + Qgen + Qevap)
-        print(Qabs)
-        print(Qgen)
-        print(Qevap)
+        #print(COPreal)
 
 #print(np.max(realCOP))
 

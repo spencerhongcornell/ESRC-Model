@@ -14,7 +14,7 @@ def run(ammoniacompin, Tgen):
 
 	m4 = massliquidoutflash
 
-	m6old = m2
+	m6old = massintoflash
 	xa4 =  liquidammoniacomp
 	ya3 = 0.75    #AZEOTROPE
 	xa6 = ammoniacompin
@@ -69,7 +69,7 @@ realCOPl = []
 Qflasl = []
 
 for i in np.arange(0, 1, 0.05):
-    Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs, Sabs, Sflas= run(i, 375)
+    Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs, Sabs, Sflas= run(i, 385)
     if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0 and Qabs < 0:
         Qevapl.append(Qevap)
         m4l.append(m4)
@@ -78,11 +78,12 @@ for i in np.arange(0, 1, 0.05):
         Qflasl.append(Qflas)
         realCOPl.append(COPreal)
         print('-------------')
+        print(i)
         print(COPreal)
-        print(Qgen + Qevap + Qabs)
-        print(Qgen)
-        print(Qevap)
-        print(Qabs)
+        print(Qabs + Qflas + Qevap + Qgen)
+        #print(Qgen)
+        #print(Qevap)
+        #print(Qabs)
 
 
         #print(Sflas)

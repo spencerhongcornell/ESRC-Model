@@ -247,7 +247,7 @@ def run(ammoniacompin):
 
     # print(COPdegrade)
     #COPdegrade = degradeCOP(266, 325, 4000000, Sall)
-    return Qevap, m4, m3, Qgen, COPreal
+    return Qevap, m4, m3, Qgen, COPreal, Qabs
 
 
 Qevapl = []
@@ -258,8 +258,8 @@ realCOP = []
 
 
 for i in np.arange(0, 1, 0.05):
-    Qevap, m4, m3, Qgen, COPreal = run(i)
-    if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0:
+    Qevap, m4, m3, Qgen, COPreal, Qabs = run(i)
+    if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0 and Qabs < 0:
         Qevapl.append(Qevap)
         m4l.append(m4)
         m3l.append(m3)
@@ -267,8 +267,9 @@ for i in np.arange(0, 1, 0.05):
         realCOP.append(COPreal)
         #print(i)
         print('----------')
+        print(i)
         print(COPreal)
-        print(Qabs + Qgen + Qevap)
+        print(m3)
         print(Qabs)
         print(Qgen)
         print(Qevap)
