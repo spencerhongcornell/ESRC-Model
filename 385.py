@@ -4,6 +4,11 @@ from sympy import solve, Eq, symbols
 import sys 
 import pandas
 import math
+import os
+
+
+
+
 # This function calculates the degradation of the COP based on each entropy generation term (S)
 def degradeCOP(Tevap, Tcond, Qall, S):
     degraded = ((Tevap * Tcond)/(Tcond - Tevap)) * (S/Qall)
@@ -32,10 +37,14 @@ def massabsorberevaporator(m6, m4, xa4, ya3, xa6):
 # This is an interpolate helper function to be used in other functions.
 # targetcomp refers to ammonia composition. All CSV files are in ammonia composition.
 def interpolate(filename, targetcomp):
-    # done at 4 bar
     # must use the entropy-ammonia-water csv, entropy-ammonia-butane csv, or enthalpy-ammonia-water csv
+
+    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+    rel_path = 'data/mixed/'
+    abs_file_path = os.path.join(script_dir, rel_path)
+
     colnames = ['pressure', 'ammoniacomp', 'prop']
-    data = pandas.read_csv('%s.csv' %filename, names=colnames)
+    data = pandas.read_csv(str(abs_file_path) + '%s.csv' %filename, names=colnames)
 
     ammoniacomp = data.ammoniacomp.tolist()
     prop = data.prop.tolist()
@@ -53,9 +62,12 @@ def interpolate(filename, targetcomp):
 def leverrule(inputflow, temp, inputcomp):
     #t-xy of ammonia-water
     #input composition of ammonia
+    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+    rel_path = "data/txy/"
+    abs_file_path = os.path.join(script_dir, rel_path)
     colnames = ['pressure', 'ammoniacomp', 'temperature', 'vaporwater', 'vaporammonia', 'liquidwater', 'liquidammonia']
-    filename = 'txy-ammonia'
-    data = pandas.read_csv('%s.csv' %filename, names = colnames)
+    filename = 'txy-ammonia-4bar'
+    data = pandas.read_csv( str(abs_file_path) + '%s.csv' %filename, names = colnames)
 
     ammoniacomp = data.ammoniacomp.tolist()
     temperature = data.temperature.tolist()
@@ -106,7 +118,8 @@ def Sgenerator(massin, compin, Qgen):
     soln = solve(system, [Sgen])
 
     return soln[Sgen]
- def Qflash(massin, massvapor, massliquid, compin, vaporammonia, liquidammonia):
+
+def Qflash(massin, massvapor, massliquid, compin, vaporammonia, liquidammonia):
 
     enthalpyin = interpolate('enthalpy-kjmol-385K-ammoniawater', compin)
 
