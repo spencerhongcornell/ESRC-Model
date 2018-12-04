@@ -264,6 +264,8 @@ def run(ammoniacompin):
     Qevap = Qevaporator(m2, m3, m5, ya3, ya2, xa5)
     Sevap = Sevaporator(m2, m3, m5, ya3, ya2, xa5, 266, Qevap)
 
+    Qflas = Qflash(massintoflash, m2, m4, ammoniacompin, ya2, xa4)
+    Sflas = Sflash(massintoflash, m2, m4, ammoniacompin, ya2, xa4, Qflas, 375)
 
 
     #print("Qevap: " + str(Qevap) + "\nSevap: " + str(Sevap))
@@ -293,7 +295,7 @@ def run(ammoniacompin):
 
     # print(COPdegrade)
     #COPdegrade = degradeCOP(266, 325, 4000000, Sall)
-    return Qevap, m4, m3, Qgen, COPreal
+    return Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs
 
 
 Qevapl = []
@@ -304,7 +306,7 @@ realCOP = []
 
 
 for i in np.arange(0, 1, 0.05):
-    Qevap, m4, m3, Qgen, COPreal = run(i)
+    Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs = run(i)
     if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0:
         Qevapl.append(Qevap)
         m4l.append(m4)
@@ -312,9 +314,11 @@ for i in np.arange(0, 1, 0.05):
         Qgenl.append(Qgen)
         realCOP.append(COPreal)
         print(i)
-        print(COPreal)
+        print(Qflas + Qgen + Qevap + Qabs)
+        #print(i)
+        #print(COPreal)
 
-print(np.max(realCOP))
+#print(np.max(realCOP))
 
 
 
