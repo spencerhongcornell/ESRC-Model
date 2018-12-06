@@ -1,4 +1,4 @@
-from helper import *
+from helper1bar import *
 import numpy as np 
 from sympy import solve, Eq, symbols
 import csv 
@@ -8,7 +8,7 @@ import os
 import pickle
 
 def run(ammoniacompin, Tgen):
-	massintoflash = 0.99
+	massintoflash = 10
 	massvaporoutflash, massliquidoutflash, liquidammoniacomp, vaporammoniacomp = leverrule(massintoflash, Tgen, ammoniacompin)
 
 	m2 = massvaporoutflash
@@ -76,8 +76,8 @@ with open("output.csv", "w") as f:
     for i in np.arange(0, 1, 0.01):
         print('read at %.2f'%i)
         realCOPl = [i]
-        for T in np.arange(370, 385, 1):
-            Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs, Sabs, Sflas= run(i, 385)
+        for T in np.arange(370, 375, 1):
+            Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs, Sabs, Sflas= run(i, T)
             print('______')
             if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0 and Qabs < 0:
                 Qevapl.append(Qevap)
