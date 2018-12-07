@@ -54,3 +54,7 @@ To check conservation of energy, return Qevap, Qflas, Qabs, and Qgen and then ad
 
 NOTE: The "m" in the code refers to molar flow rates, not mass flow rates. The units of these molar flow rates are mol/s. Furthermore, all of the data in the /data/mixed CSV files are in kJ/mol.
 
+.. code-block:: bash
+
+   [user@local]~% cd ~; python main.py
+
