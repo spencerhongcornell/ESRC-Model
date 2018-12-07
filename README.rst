@@ -52,5 +52,5 @@ What this means is that all of the COP provided by the model obey these conditio
 
 To check conservation of energy, return Qevap, Qflas, Qabs, and Qgen and then add them to a sum to see that net change in energy is 0 kJ/s.
 
-NOTE: The "m" in the code refers to molar flow rates, not mass flow rates. The units of these molar flow rates are mol/s. Furthermore, all of the data in the CSV files are in kJ/s. 
+NOTE: The "m" in the code refers to molar flow rates, not mass flow rates. The units of these molar flow rates are mol/s. Furthermore, all of the data in the /data/mixed CSV files are in kJ/mol.
 
