@@ -78,6 +78,7 @@ with open("output.csv", "w") as f:
         realCOPl = [i]
         for T in np.arange(370, 385, 1):
             Qevap, m4, m3, Qgen, COPreal, Qflas, Qabs, Sabs, Sflas= run(i, 385)
+            total = Qabs+Qevap+Qgen+Qflas
             print('______')
             if Qevap > 0 and m4 > 0 and m3 > 0 and Qgen > 0 and Qabs < 0:
                 Qevapl.append(Qevap)
@@ -86,6 +87,9 @@ with open("output.csv", "w") as f:
                 Qgenl.append(Qgen)
                 Qflasl.append(Qflas)
                 realCOPl.append(COPreal)
+                print(total)
+                #Line 90: If total = 0 (ignoring floating point rounding), then the first law is 
+                #satisfied based on an overall system energy balance. 
                 print('success')
                 print('________')
         overall.append(realCOPl)

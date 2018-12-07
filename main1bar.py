@@ -73,7 +73,7 @@ Qflasl = []
 with open("output.csv", "w") as f:
     writer = csv.writer(f)
     overall = [np.arange(369, 385, 1)]
-    for i in np.arange(0, 1, 0.01):
+    for i in np.arange(0, 0.25, 0.01):
         print('read at %.2f'%i)
         realCOPl = [i]
         for T in np.arange(370, 375, 1):
@@ -86,6 +86,9 @@ with open("output.csv", "w") as f:
                 Qgenl.append(Qgen)
                 Qflasl.append(Qflas)
                 realCOPl.append(COPreal)
+                #Line 91: Check that first law is satisfied. From total system energy balance,
+                #the sum of the heats/enthalpies of every unit should be equal to zero.
+                print(Qabs+Qevap+Qflas+Qgen)
                 print('success')
                 print('________')
         overall.append(realCOPl)
