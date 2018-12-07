@@ -18,11 +18,11 @@ Currently installation involves cloning this repository.
 
 .. code-block:: bash
 
-   [user@local]~% cd ~; git clone https://github.com/spencerhongcornell/varnerthermof18.git
+   [user@local]~% cd ~; git clone https://github.com/spencerhongcornell/ESRC-Model.git
 
 .. code-block:: bash
 
-   [user@local]~% cd ~; git clone git@github.com:spencerhongcornell/varnerthermof18.git
+   [user@local]~% cd ~; git clone git@github.com:spencerhongcornell/ESRC-Model.git
 
 
 Contributing/Extensions
